@@ -1,21 +1,27 @@
-from gc import callbacks
-from os import name
-from random import setstate
+import re
 from aiogram import F, Router
-from aiogram.filters import Command
 from aiogram.types import (Message, ReplyKeyboardMarkup, 
                            KeyboardButton, InlineKeyboardMarkup,
                            InlineKeyboardButton, CallbackQuery)
 from aiogram.fsm.context import FSMContext
 
-from text.text import welcome_text
-from states.register_fsm import Register
-
+from text.text import (welcome_text, last_name_text,
+                       first_name_text, email_text, birthday_text,
+                       sex_text, phone_text)
+from states.register_fsm import Register, MainMenu
+from validators.valid import is_valid_phone, is_valid_birthday
+from datetime import datetime
 
 router = Router()
 
-@router.message()
-async def set_phone_number(message: Message, state: FSMContext) -> None:
+
+@router.message(Register.start)
+@router.callback_query(F.data == 'again', Register.check_data)
+async def set_phone_number(update: Message | CallbackQuery, state: FSMContext) -> None:
+    if isinstance(update, CallbackQuery):
+        message = update.message
+    else:
+        message = update
     await state.clear()
     contact_keyboard = ReplyKeyboardMarkup(
                 keyboard=[
@@ -24,43 +30,185 @@ async def set_phone_number(message: Message, state: FSMContext) -> None:
                 resize_keyboard=True,
                 one_time_keyboard=True
             )
+    inline_kb = InlineKeyboardMarkup(inline_keyboard=[
+                                     [InlineKeyboardButton(text='Подробнее', url='https://goo.su/4wb19P')]
+                                     ])
     await message.answer(
         welcome_text,
+        reply_markup=inline_kb
+    )
+    await message.answer(
+        text=phone_text,
         reply_markup=contact_keyboard
     )
     await state.set_state(Register.phone_number)
 
 
+@router.message(F.contact | F.text, Register.phone_number)
+async def phone_validator(message: Message, state: FSMContext) -> None:
+    if message.contact:
+        phone = message.contact.phone_number
+    elif is_valid_phone(message.text) is True:
+        phone = message.text
+    else:
+        phone = is_valid_phone(message.text)
+        if not phone:
+            await message.answer(
+                'Что-то не так. \nВведите пожалуйста еще раз'
+            )
+            return        
+    await state.update_data(phone_number=phone)
+    await message.answer(
+        text=last_name_text,
+        parse_mode='HTML'
+    )
+    await state.set_state(Register.last_name)
 
-@router.message(F.contact, Register.phone_number)
-async def start_register(message: Message) -> None:
-    register_button = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text='Регистрация', callback_data='phone_number')]
+
+@router.message(F.text, Register.last_name)
+async def set_last_name(message: Message, state: FSMContext) -> None:
+    if message.text.isalpha():
+        name = message.text
+    else:
+        await message.answer(
+                'Что-то не так. \nВведите пожалуйста еще раз'
+            )
+        return 
+    await state.update_data(last_name=name)
+    await message.answer(
+        text=first_name_text,
+        parse_mode='HTML'
+    )
+    await state.set_state(Register.first_name)
+    
+
+@router.message(F.text, Register.first_name)
+async def set_first_name(message: Message, state: FSMContext) -> None:
+    if message.text.isalpha():
+        name = message.text
+    else:
+        await message.answer(
+                'Что-то не так. \nВведите пожалуйста еще раз'
+            )
+        return
+    await state.update_data(first_name=name) 
+    await message.answer(
+        text=email_text,
+        parse_mode='HTML'
+    )
+    await state.set_state(Register.email)
+
+
+@router.message(F.text, Register.email)
+async def set_email(message: Message, state: FSMContext) -> None:
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    email_valid = bool(re.fullmatch(pattern, message.text))
+    if email_valid:
+        email = message.text
+    else:
+        await message.answer(
+                'Что-то не так. \nВведите пожалуйста еще раз'
+            )
+        return
+    await state.update_data(email=email)
+    await message.answer(
+        text=birthday_text,
+        parse_mode='HTML'
+    )
+    await state.set_state(Register.date_of_birth)
+
+
+@router.message(F.text, Register.date_of_birth)
+async def set_birthday(message: Message, state: FSMContext) -> None:
+    is_valid = is_valid_birthday(message.text)
+    if is_valid:
+        birthday = datetime.strptime(message.text, "%d.%m.%Y").date()
+    else:
+        await message.answer(
+                'Что-то не так. \nВведите пожалуйста еще раз'
+            )
+        return
+    await state.update_data(date_of_birth=birthday)
+    inline_kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text='Мужской', callback_data='male')],
+        [InlineKeyboardButton(text='Женский', callback_data='female')]
     ])
     await message.answer(
-        welcome_text,
-        reply_markup=register_button
+        text=sex_text,
+        reply_markup=inline_kb,
+        parse_mode='HTML'
     )
+    await state.set_state(Register.sex)
+    print(await state.get_data())
+
+
+@router.callback_query(F.data.in_(['male', 'female']), Register.sex)
+async def set_sex(call: CallbackQuery, state: FSMContext):
+    pattern = {'male': 'Мужской', 'female': 'Женский'}
+    if call.data in pattern:
+        sex = call.data
+    else:
+        await call.answer(
+                'Что-то не так. \nВведите пожалуйста еще раз'
+            )
+        return
+    await state.update_data(sex=pattern[sex])
+
+    user_data = await state.get_data()
+
+    check_text = f'''
+    <b>Проверьте пожалуйста данные</b>\n
+    <b>Имя: {user_data["first_name"]}</b>\n
+    <b>Фамилия: {user_data["last_name"]}</b>\n
+    <b>Номер телефона: {user_data["phone_number"]}</b>\n
+    <b>Дата рождения: {user_data["date_of_birth"]}</b>\n
+    <b>Email: {user_data["email"]}</b>\n
+    <b>Пол: {user_data["sex"]}</b>\n
+    '''
+
+    inline_kb = InlineKeyboardMarkup(inline_keyboard=
+                                     [
+                                        [InlineKeyboardButton(text='Все верно', callback_data='ok')],
+                                        [InlineKeyboardButton(text='Начать сначала', callback_data='again')]
+                                     ])
+
+    await call.message.answer(
+        text=check_text,
+        reply_markup=inline_kb,
+        parse_mode='HTML'
+    )
+    await state.set_state(Register.check_data)
+
+
+@router.callback_query(F.data.in_(['ok', 'again']), Register.check_data)
+async def final(call: CallbackQuery, state: FSMContext):
+    if call.data == 'again':
+        await state.set_state(Register.start)
+    else:
+        await call.message.answer(
+            text='Спасибо за регистрацию!'
+        )
+        await state.clear()
+        await state.set_state(MainMenu.main_menu)
 
 
 
-# @router.callback_query(F.data == 'phone_number')
-# async def get_phone_number(callback: CallbackQuery, state: FSMContext) -> None:
-#     await state.clear()
-#     await callback.message.delete_reply_markup()
+
+
+
+
+
 
     
-#     await callback.message.answer(
-#         ,
-#         reply_markup=contact_keyboard)
-    
-#     await state.set_state(Register.phone_number)
-    
 
-# @router.message(Register.phone_number, F.contact)
-# async def get_last_name(message: Message, state: FSMContext):
-#     await state.update_data(phone_number=message.text)
-#     await state.set_state(Register.last_name)
+
+
+
+
+
+
+
+
         
 
 
