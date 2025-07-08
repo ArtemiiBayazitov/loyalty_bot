@@ -5,12 +5,14 @@ from aiogram.types import (Message, ReplyKeyboardMarkup,
                            InlineKeyboardButton, CallbackQuery)
 from aiogram.fsm.context import FSMContext
 
+from handlers import main_menu
 from text.text import (welcome_text, last_name_text,
                        first_name_text, email_text, birthday_text,
-                       sex_text, phone_text)
+                       sex_text, phone_text, error_text)
 from states.register_fsm import Register, MainMenu
 from validators.valid import is_valid_phone, is_valid_birthday
 from datetime import datetime
+from handlers.main_menu import main_menu
 
 router = Router()
 
@@ -54,10 +56,30 @@ async def phone_validator(message: Message, state: FSMContext) -> None:
         phone = is_valid_phone(message.text)
         if not phone:
             await message.answer(
-                'Что-то не так. \nВведите пожалуйста еще раз'
+                text=error_text
             )
             return        
     await state.update_data(phone_number=phone)
+    await message.answer(
+        text=first_name_text,
+        parse_mode='HTML'
+    )
+    await state.set_state(Register.first_name)
+
+
+@router.message(F.text, Register.first_name)
+async def set_first_name(message: Message, state: FSMContext) -> None:
+    if message.text.isalpha():
+        name = message.text
+    else:
+        await message.answer(
+                text=error_text
+            )
+        return
+    await state.update_data(first_name=name) 
+    await message.answer(
+        text=f'Приятно познакомиться, {message.text}'
+    )
     await message.answer(
         text=last_name_text,
         parse_mode='HTML'
@@ -71,32 +93,16 @@ async def set_last_name(message: Message, state: FSMContext) -> None:
         name = message.text
     else:
         await message.answer(
-                'Что-то не так. \nВведите пожалуйста еще раз'
+                text=error_text
             )
         return 
     await state.update_data(last_name=name)
-    await message.answer(
-        text=first_name_text,
-        parse_mode='HTML'
-    )
-    await state.set_state(Register.first_name)
-    
-
-@router.message(F.text, Register.first_name)
-async def set_first_name(message: Message, state: FSMContext) -> None:
-    if message.text.isalpha():
-        name = message.text
-    else:
-        await message.answer(
-                'Что-то не так. \nВведите пожалуйста еще раз'
-            )
-        return
-    await state.update_data(first_name=name) 
     await message.answer(
         text=email_text,
         parse_mode='HTML'
     )
     await state.set_state(Register.email)
+    
 
 
 @router.message(F.text, Register.email)
@@ -107,7 +113,7 @@ async def set_email(message: Message, state: FSMContext) -> None:
         email = message.text
     else:
         await message.answer(
-                'Что-то не так. \nВведите пожалуйста еще раз'
+                text=error_text
             )
         return
     await state.update_data(email=email)
@@ -125,7 +131,7 @@ async def set_birthday(message: Message, state: FSMContext) -> None:
         birthday = datetime.strptime(message.text, "%d.%m.%Y").date()
     else:
         await message.answer(
-                'Что-то не так. \nВведите пожалуйста еще раз'
+                text=error_text
             )
         return
     await state.update_data(date_of_birth=birthday)
@@ -149,7 +155,7 @@ async def set_sex(call: CallbackQuery, state: FSMContext):
         sex = call.data
     else:
         await call.answer(
-                'Что-то не так. \nВведите пожалуйста еще раз'
+                text=error_text
             )
         return
     await state.update_data(sex=pattern[sex])
@@ -186,10 +192,11 @@ async def final(call: CallbackQuery, state: FSMContext):
         await state.set_state(Register.start)
     else:
         await call.message.answer(
-            text='Спасибо за регистрацию!'
+            text='Спасибо за регистрацию!',
         )
         await state.clear()
         await state.set_state(MainMenu.main_menu)
+        await main_menu(call)
 
 
 
