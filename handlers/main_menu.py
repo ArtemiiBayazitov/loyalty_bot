@@ -1,3 +1,4 @@
+from ast import Call
 from operator import call
 import os
 from aiogram import F, Router
@@ -5,12 +6,11 @@ from aiogram.filters import Command
 from aiogram.types import (Message, ReplyKeyboardMarkup, 
                            KeyboardButton, InlineKeyboardMarkup,
                            InlineKeyboardButton, CallbackQuery,
-                           FSInputFile, InputMediaPhoto)
-from aiogram.utils.keyboard import InlineKeyboardBuilder
-
-from states.register_fsm import MainMenu, Register
+                           FSInputFile, InputMediaPhoto, ReplyKeyboardRemove)
+from states.support_fsm import Support
 from aiogram.fsm.context import FSMContext
-from text.text import gift_text, delivery_text, loyalty_text
+from text.text import (gift_text, delivery_text, loyalty_text,
+                       support_text, support_message_text)
 
 
 router = Router()
@@ -23,7 +23,7 @@ async def main_menu(update: Message | CallbackQuery) -> None:
     else:
         message = update
     reply_kb = ReplyKeyboardMarkup(keyboard=[
-        [KeyboardButton(text='Баланс и\nуровень')], 
+        [KeyboardButton(text='Баланс и уровень')], 
         [KeyboardButton(text='Показать карту')],
         [KeyboardButton(text='Дополнительно')],
         
@@ -52,7 +52,7 @@ async def get_card(message: Message) -> None:
         )
 
 
-@router.message(F.text == 'Баланс и\nуровень')
+@router.message(F.text == 'Баланс и уровень')
 async def get_balance(message: Message) -> None:
     balance = 150
     level = 'bronze'
@@ -103,3 +103,60 @@ async def get_loyalty_info(call: CallbackQuery) -> None:
         text=loyalty_text,
         parse_mode='HTML'
     )
+
+
+@router.callback_query(F.data == 'support')
+async def get_support_info(call: CallbackQuery, state: FSMContext) -> None:
+    inline_kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text='вопрос по карте лояльности', callback_data='loyalty_question')],
+        [InlineKeyboardButton(text='вопрос по визиту или доставке в Антресоль', callback_data='antresol_question')],
+        [InlineKeyboardButton(text='вопрос по визиту или доставке в Вольсов', callback_data='volsov_question')],
+        [InlineKeyboardButton(text='вопрос по визиту или доставке в Gonzo', callback_data='gonzo_question')],
+    ])
+    await call.message.answer(
+        text=support_text,
+        reply_markup=inline_kb,
+        parse_mode='HTML'
+    )
+
+support_callback = ['loyalty_question', 'antresol_question', 'volsov_question', 'gonzo_question']
+
+
+@router.callback_query(F.data.in_(support_callback))
+async def set_support_message(call: CallbackQuery, state: FSMContext) -> None:
+    await call.answer()
+    await state.set_state(Support.support_message)
+    await call.message.answer(
+        text=support_message_text,
+        reply_markup=ReplyKeyboardRemove()
+    )
+
+
+@router.message(F.text, Support.support_message)
+async def get_support_message(message: Message, state: FSMContext) -> None:
+    data = message.text
+    await state.update_data(support_message=data)
+    await message.answer(
+        text='Ваше сообщение зарегистрировано.Скоро с Вами свяжется наш сотрудник\n/start'
+    )
+    await state.clear()
+    
+
+
+@router.callback_query(F.data == 'work')
+async def set_work_message(call: CallbackQuery, state: FSMContext):
+    inline_kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text='Реклама и маркетинг', callback_data='marketing')],
+        [InlineKeyboardButton(text='Поставки', callback_data='sales')],
+        [InlineKeyboardButton(text='Инвестиции', callback_data='invest')],
+        [InlineKeyboardButton(text='Вернуться в главное меню', callback_data='main_menu')],
+    ])
+    await call.message.answer(
+        text='<b>Выберите интресующий раздел</b>👇',
+        reply_markup=inline_kb,
+        parse_mode='HTML'
+    )
+
+
+    
+    

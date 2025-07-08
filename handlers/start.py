@@ -15,8 +15,8 @@ router = Router()
 
 @router.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext) -> None:
-    auth_user: bool = await is_auth(message.from_user.id)
-    # auth_user = True
+    # auth_user: bool = await is_auth(message.from_user.id)
+    auth_user = True
     if auth_user:
         await main_menu(message)
     else:
