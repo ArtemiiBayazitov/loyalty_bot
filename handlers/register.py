@@ -14,8 +14,8 @@ from validators.valid import is_valid_phone, is_valid_birthday
 from datetime import datetime
 from handlers.main_menu import main_menu
 
-router = Router()
 
+router = Router()
 
 @router.message(Register.start)
 @router.callback_query(F.data == 'again', Register.check_data)

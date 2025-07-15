@@ -34,6 +34,7 @@ async def main_menu(update: Message | CallbackQuery) -> None:
 
 
 @router.message(F.text == 'Показать карту')
+@router.message(Command('card'))
 async def get_card(message: Message) -> None:
     barcode_image = FSInputFile('barcodes/images/01234567.jpg')
     barcode_num = '0123-4567'
@@ -50,6 +51,7 @@ async def get_card(message: Message) -> None:
 
 
 @router.message(F.text == 'Баланс и уровень')
+@router.message(Command('balance'))
 async def get_balance(message: Message) -> None:
     balance = 150
     level = 'bronze'
@@ -102,8 +104,23 @@ async def get_loyalty_info(call: CallbackQuery) -> None:
     )
 
 
+@router.message(Command('support'))
+async def get_support_info_message(message: Message, state: FSMContext) -> None:
+    inline_kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text='вопрос по карте лояльности', callback_data='loyalty_question')],
+        [InlineKeyboardButton(text='вопрос по визиту или доставке в Антресоль', callback_data='antresol_question')],
+        [InlineKeyboardButton(text='вопрос по визиту или доставке в Вольсов', callback_data='volsov_question')],
+        [InlineKeyboardButton(text='вопрос по визиту или доставке в Gonzo', callback_data='gonzo_question')],
+    ])
+    await message.answer(
+        text=support_text,
+        reply_markup=inline_kb,
+        parse_mode='HTML'
+    )
+
+
 @router.callback_query(F.data == 'support')
-async def get_support_info(call: CallbackQuery, state: FSMContext) -> None:
+async def get_support_info_callback(call: CallbackQuery, state: FSMContext) -> None:
     inline_kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text='вопрос по карте лояльности', callback_data='loyalty_question')],
         [InlineKeyboardButton(text='вопрос по визиту или доставке в Антресоль', callback_data='antresol_question')],
@@ -134,7 +151,7 @@ async def get_support_message(message: Message, state: FSMContext) -> None:
     data = message.text
     await state.update_data(support_message=data)
     await message.answer(
-        text='Ваше сообщение зарегистрировано.Скоро с Вами свяжется наш сотрудник\n/start'
+        text='Ваше сообщение зарегистрировано.Скоро с Вами свяжется наш сотрудник /start'
     )
     await state.clear()
     
