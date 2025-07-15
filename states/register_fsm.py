@@ -10,6 +10,7 @@ class Register(StatesGroup):
     date_of_birth = State()
     sex = State()
     check_data = State()
+    save_data = State
 
 
 class MainMenu(StatesGroup):

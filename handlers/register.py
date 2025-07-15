@@ -1,3 +1,4 @@
+from email import message
 import re
 from aiogram import F, Router
 from aiogram.types import (Message, ReplyKeyboardMarkup, 
@@ -13,6 +14,7 @@ from states.register_fsm import Register, MainMenu
 from validators.valid import is_valid_phone, is_valid_birthday
 from datetime import datetime
 from handlers.main_menu import main_menu
+from database.requests import save_data_on_db
 
 
 router = Router()
@@ -187,10 +189,18 @@ async def set_sex(call: CallbackQuery, state: FSMContext):
 
 
 @router.callback_query(F.data.in_(['ok', 'again']), Register.check_data)
-async def final(call: CallbackQuery, state: FSMContext):
+async def final(call: CallbackQuery, state: FSMContext) -> None:
     if call.data == 'again':
         await state.set_state(Register.start)
     else:
+        tg_data_dict = {
+            'telegram_id': call.from_user.id,
+            'username': call.from_user.username
+        }
+        user_data = await state.get_data()
+        user_data.update(tg_data_dict)
+        print(user_data)
+        await save_data_on_db(user_data)
         await call.message.answer(
             text='Спасибо за регистрацию!',
         )

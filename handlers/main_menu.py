@@ -44,7 +44,7 @@ async def get_card(message: Message) -> None:
             caption=f'<b>Номер вашей карты: {barcode_num}</b>',
             parse_mode='HTML'
         )
-    except TelegramBadRequest as e:
+    except Exception:
         await message.answer(
             text='Повторите запрос чуть позже'
         )
