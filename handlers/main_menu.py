@@ -6,9 +6,9 @@ from aiogram.types import (Message, ReplyKeyboardMarkup,
                            FSInputFile, InputMediaPhoto, ReplyKeyboardRemove)
 from states.support_fsm import Support
 from aiogram.fsm.context import FSMContext
-from text.text import (gift_text, delivery_text, loyalty_text,
-                       support_text, support_message_text)
-
+from text.text import *
+from keyboards import *
+from database.requests_db import save_complaint_on_db
 
 router = Router()
 
@@ -62,16 +62,10 @@ async def get_balance(message: Message) -> None:
 
 @router.message(F.text == 'Дополнительно')
 async def more_options(message: Message) -> None:
-    inline_kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text='Каталог Подарков', callback_data='gifts')],
-        [InlineKeyboardButton(text='Доставка', callback_data='delivery')],
-        [InlineKeyboardButton(text='Сотрудничество', callback_data='work')],
-        [InlineKeyboardButton(text='Правила программы лояльности', callback_data='loyalty')],
-        [InlineKeyboardButton(text='Поддержка', callback_data='support')],
-    ])
+
     await message.answer(
         text='Выберите интересующий раздел',
-        reply_markup=inline_kb,
+        reply_markup=more_inline_kb,
     )
 
 
@@ -85,14 +79,9 @@ async def get_gifts(call: CallbackQuery) -> None:
 
 @router.callback_query(F.data == 'delivery')
 async def get_delivery_info(call: CallbackQuery) -> None:
-    inline_kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text='Вольсов', url='https://eda.yandex.ru/ulyanovsk/r/vol_sov?placeSlug=volsov_zhxsp')],
-        [InlineKeyboardButton(text='Gonzo', url='https://eda.yandex.ru/r/gonzo')],
-        [InlineKeyboardButton(text='Антресоль', url='https://antresol.drugierestorany.ru/dostavka')]
-    ])
     await call.message.answer(
         delivery_text,
-        reply_markup=inline_kb
+        reply_markup=delivery_inline_kb,
     )
 
 
@@ -106,30 +95,18 @@ async def get_loyalty_info(call: CallbackQuery) -> None:
 
 @router.message(Command('support'))
 async def get_support_info_message(message: Message, state: FSMContext) -> None:
-    inline_kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text='вопрос по карте лояльности', callback_data='loyalty_question')],
-        [InlineKeyboardButton(text='вопрос по визиту или доставке в Антресоль', callback_data='antresol_question')],
-        [InlineKeyboardButton(text='вопрос по визиту или доставке в Вольсов', callback_data='volsov_question')],
-        [InlineKeyboardButton(text='вопрос по визиту или доставке в Gonzo', callback_data='gonzo_question')],
-    ])
     await message.answer(
         text=support_text,
-        reply_markup=inline_kb,
+        reply_markup=support_inline_kb,
         parse_mode='HTML'
     )
 
 
 @router.callback_query(F.data == 'support')
 async def get_support_info_callback(call: CallbackQuery, state: FSMContext) -> None:
-    inline_kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text='вопрос по карте лояльности', callback_data='loyalty_question')],
-        [InlineKeyboardButton(text='вопрос по визиту или доставке в Антресоль', callback_data='antresol_question')],
-        [InlineKeyboardButton(text='вопрос по визиту или доставке в Вольсов', callback_data='volsov_question')],
-        [InlineKeyboardButton(text='вопрос по визиту или доставке в Gonzo', callback_data='gonzo_question')],
-    ])
     await call.message.answer(
         text=support_text,
-        reply_markup=inline_kb,
+        reply_markup=support_inline_kb,
         parse_mode='HTML'
     )
 
@@ -146,29 +123,25 @@ async def set_support_message(call: CallbackQuery, state: FSMContext) -> None:
     )
 
 
-@router.message(F.text, Support.support_message)
+@router.message((F.text | F.photo), Support.support_message)
 async def get_support_message(message: Message, state: FSMContext) -> None:
-    data = message.text
-    await state.update_data(support_message=data)
+    photo_id = message.photo[-1].file_id if message.photo else None
+    
+    await save_complaint_on_db(message.from_user.id, message.text, photo_id, )
+
     await message.answer(
-        text='Ваше сообщение зарегистрировано.Скоро с Вами свяжется наш сотрудник /start'
+        text='Ваше сообщение зарегистрировано.Скоро с Вами свяжется наш сотрудник',
+        reply_markup=back_inline_button,
     )
     await state.clear()
     
 
-
 @router.callback_query(F.data == 'work')
 async def set_work_message(call: CallbackQuery, state: FSMContext):
-    inline_kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text='Реклама и маркетинг', callback_data='marketing')],
-        [InlineKeyboardButton(text='Поставки', callback_data='sales')],
-        [InlineKeyboardButton(text='Инвестиции', callback_data='invest')],
-        [InlineKeyboardButton(text='Вернуться в главное меню', callback_data='main_menu')],
-    ])
     await call.message.answer(
         text='<b>Выберите интресующий раздел</b>👇',
-        reply_markup=inline_kb,
-        parse_mode='HTML'
+        reply_markup=work_inline_kb,
+        parse_mode='HTML',
     )
 
 

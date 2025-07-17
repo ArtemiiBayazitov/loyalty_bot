@@ -4,7 +4,7 @@ from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
-from database.requests import is_auth
+from database.requests_db import is_auth
 from handlers.register import set_phone_number
 from handlers.main_menu import main_menu
 from states.register_fsm import Register

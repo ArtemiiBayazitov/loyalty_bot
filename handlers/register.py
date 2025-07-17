@@ -7,14 +7,12 @@ from aiogram.types import (Message, ReplyKeyboardMarkup,
 from aiogram.fsm.context import FSMContext
 
 from handlers import main_menu
-from text.text import (welcome_text, last_name_text,
-                       first_name_text, email_text, birthday_text,
-                       sex_text, phone_text, error_text)
+from text.text import *
 from states.register_fsm import Register, MainMenu
 from validators.valid import is_valid_phone, is_valid_birthday
 from datetime import datetime
 from handlers.main_menu import main_menu
-from database.requests import save_data_on_db
+from database.requests_db import save_data_on_db
 
 
 router = Router()
@@ -79,11 +77,9 @@ async def set_first_name(message: Message, state: FSMContext) -> None:
             )
         return
     await state.update_data(first_name=name) 
+    data = await state.get_data()
     await message.answer(
-        text=f'Приятно познакомиться, {message.text}'
-    )
-    await message.answer(
-        text=last_name_text,
+        text=last_name_text.format(**data),
         parse_mode='HTML'
     )
     await state.set_state(Register.last_name)
@@ -202,7 +198,7 @@ async def final(call: CallbackQuery, state: FSMContext) -> None:
         print(user_data)
         await save_data_on_db(user_data)
         await call.message.answer(
-            text='Спасибо за регистрацию!',
+            text=complete_registration_text.format(**user_data),
         )
         await state.clear()
         await state.set_state(MainMenu.main_menu)

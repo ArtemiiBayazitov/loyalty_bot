@@ -1,7 +1,7 @@
 from database.models import async_session
-from database.models import User
-from sqlalchemy import delete, select, update
-
+from database.models import User, Complaint
+from sqlalchemy import Select, delete, select, update
+from aiogram.types import CallbackQuery, Message
 
 async def is_auth(tg_id: int):
     async with async_session() as session:
@@ -28,3 +28,21 @@ async def save_data_on_db(fsm_data: dict) -> int:
         return user_data.id
 
     
+async def save_complaint_on_db():
+    async with async_session() as session:
+        result = await session.execute(
+            Select(Complaint, User.full_name)
+            .join(User, Complaint.user_id == 'User.id')
+        )
+        print(result)
+    # async with async_session() as session:
+    #     complaint = Complaint(
+    #         user_id=,
+    #         text=fsm_date.get('text'),
+    #         id_photo=fsm_date.get('id_photo'),
+    #         status='new',
+    #         location=fsm_date.get('location')
+    #     )
+    #     session.add(complaint)
+    #     await session.commit()
+        return

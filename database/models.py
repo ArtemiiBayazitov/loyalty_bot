@@ -42,6 +42,19 @@ class LoyaltyData(Base):
     session_counter: Mapped[int | None] = mapped_column(Integer, default=0)
 
 
+class Complaint(Base):
+    __tablename__ = 'complaints'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    created_at: Mapped[int] = mapped_column(default=datetime.now)
+    text_complaint: Mapped[str] = mapped_column(String(500))
+    id_photo: Mapped[str] = mapped_column(String(100))
+    status: Mapped[str] = mapped_column(String(20))
+    location: Mapped[str] = mapped_column(String(100))
+
+
+
 async def async_main() -> None:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
