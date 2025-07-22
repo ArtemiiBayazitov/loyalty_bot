@@ -28,7 +28,7 @@ async def save_data_on_db(fsm_data: dict) -> int:
         return user_data.id
 
     
-async def save_complaint_on_db():
+async def save_complaint_on_db(*args, **kwargs) -> None:
     async with async_session() as session:
         result = await session.execute(
             Select(Complaint, User.full_name)

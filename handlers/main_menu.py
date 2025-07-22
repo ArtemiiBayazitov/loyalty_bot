@@ -13,6 +13,7 @@ from database.requests_db import save_complaint_on_db
 router = Router()
 
 
+@router.callback_query(F.data == 'start')
 @router.message(Command('main_menu'))
 async def main_menu(update: Message | CallbackQuery) -> None:
     if isinstance(update, CallbackQuery):
@@ -125,9 +126,9 @@ async def set_support_message(call: CallbackQuery, state: FSMContext) -> None:
 
 @router.message((F.text | F.photo), Support.support_message)
 async def get_support_message(message: Message, state: FSMContext) -> None:
-    photo_id = message.photo[-1].file_id if message.photo else None
+    # photo_id = message.photo[-1].file_id if message.photo else None
     
-    await save_complaint_on_db(message.from_user.id, message.text, photo_id, )
+    # await save_complaint_on_db(message.from_user.id, message.text, photo_id, )
 
     await message.answer(
         text='Ваше сообщение зарегистрировано.Скоро с Вами свяжется наш сотрудник',
