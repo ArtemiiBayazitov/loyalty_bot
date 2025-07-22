@@ -9,7 +9,6 @@ from handlers.register import set_phone_number
 from handlers.main_menu import main_menu
 from states.register_fsm import Register
 
-
 router = Router()
 
 

@@ -8,12 +8,22 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from config import TOKEN
 from handlers import start, register, main_menu
-
+from text.text import banner_text
 
 from database.models import async_main
 
 
 dp = Dispatcher()
+
+
+async def setup_bot_info(bot: Bot):
+    await bot.set_my_description(
+        banner_text
+    )
+    
+    await bot.set_my_short_description(
+        "🎉 Штрихкод, бонусы, акции и поддержка для гостей “Других ресторанов”."
+    )
 
 
 async def set_command(bot: Bot):
@@ -31,6 +41,7 @@ async def main() -> None:
     bot = Bot(token=TOKEN, default=DefaultBotProperties(
         parse_mode=ParseMode.HTML)
         )
+    await setup_bot_info(bot)
     await set_command(bot)
     dp.include_router(start.router)
     dp.include_router(register.router)
