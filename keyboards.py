@@ -36,3 +36,8 @@ back_inline_button = InlineKeyboardMarkup(inline_keyboard=[
 catalog_inlint_button = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='Каталог подарков', url='https://gifts.drugierestorany.ru/')]
 ])
+
+offer_inline_kb = InlineKeyboardMarkup(inline_keyboard=[
+    [InlineKeyboardButton(text='Нет коммерческого', callback_data='Null')],
+    [InlineKeyboardButton(text='Вернуться в начало', callback_data='start')]
+])

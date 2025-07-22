@@ -6,6 +6,7 @@ from aiogram.types import (Message, ReplyKeyboardMarkup,
                            FSInputFile, InputMediaPhoto, ReplyKeyboardRemove)
 from states.support_fsm import Support
 from aiogram.fsm.context import FSMContext
+from states.work_fsm import WorkState
 from text.text import *
 from keyboards import *
 from database.requests_db import save_complaint_on_db
@@ -138,12 +139,81 @@ async def get_support_message(message: Message, state: FSMContext) -> None:
     
 
 @router.callback_query(F.data == 'work')
-async def set_work_message(call: CallbackQuery, state: FSMContext):
+async def set_work_callback(call: CallbackQuery, state: FSMContext) -> None:
     await call.message.answer(
-        text='<b>Выберите интресующий раздел</b>👇',
+        text=work_start_text,
         reply_markup=work_inline_kb,
         parse_mode='HTML',
     )
+    await state.set_state(WorkState.lesson)
+
+
+work_set = {'marketing', 'sales', 'invest'}
+
+
+@router.callback_query(F.data.in_(work_set), WorkState.lesson)
+async def work_contact_callback(call: CallbackQuery, state: FSMContext) -> None:
+    await state.clear()
+    await state.update_data(lesson=call.data)
+    print(call.data)
+    await call.message.answer(
+        text=work_company_text,
+        parse_mode='HTML',
+    )
+    await state.set_state(WorkState.company)
+
+
+@router.message(F.text, WorkState.company)
+async def work_company_message(message: Message, state: FSMContext) -> None:
+    await state.update_data(company=message.text)
+    print(message.text)
+    await message.answer(
+        text=work_service_text,
+        parse_mode='HTML',
+    )
+    await state.set_state(WorkState.description)
+
+
+@router.message(F.text, WorkState.description)
+async def work_description_message(message: Message, state: FSMContext) -> None:
+    await state.update_data(description=message.text)
+    print(message.text)
+    await message.answer(
+        text=work_offer_text,
+        reply_markup=offer_inline_kb,
+        parse_mode='HTML',
+    )
+    await state.set_state(WorkState.offer)
+
+
+@router.message(F.text, WorkState.offer)
+async def work_offer_message(message: Message, state: FSMContext) -> None:
+    await state.update_data(offer=message.text)
+    print(message.text)
+    await message.answer(
+        text=work_contact_text,
+        parse_mode='HTML',
+    )
+    await state.set_state(WorkState.contact)
+
+
+@router.message(F.text, WorkState.contact)
+async def work_contact_message(message: Message, state: FSMContext) -> None:
+    await state.update_data(contact=message.text)
+    print(message.text)
+    await message.answer(
+        text=work_message_reg,
+        parse_mode='HTML',
+    )
+    # data = await state.get_data()
+    # await message.answer(
+    #     text=f'Вот содержимое обращения: {data}'
+    # )
+    await state.clear()
+
+
+
+
 
 
     

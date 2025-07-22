@@ -184,7 +184,7 @@ async def set_sex(call: CallbackQuery, state: FSMContext):
     await state.set_state(Register.check_data)
 
 
-@router.callback_query(F.data.in_(['ok', 'again']), Register.check_data)
+@router.callback_query(F.data.in_({'ok', 'again'}), Register.check_data)
 async def final(call: CallbackQuery, state: FSMContext) -> None:
     if call.data == 'again':
         await state.set_state(Register.start)
