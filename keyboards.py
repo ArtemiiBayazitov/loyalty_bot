@@ -16,10 +16,10 @@ delivery_inline_kb = InlineKeyboardMarkup(inline_keyboard=[
     ])
 
 support_inline_kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text='вопрос по карте лояльности', callback_data='loyalty_question')],
-        [InlineKeyboardButton(text='вопрос по визиту или доставке в Антресоль', callback_data='antresol_question')],
-        [InlineKeyboardButton(text='вопрос по визиту или доставке в Вольсов', callback_data='volsov_question')],
-        [InlineKeyboardButton(text='вопрос по визиту или доставке в Gonzo', callback_data='gonzo_question')],
+        [InlineKeyboardButton(text='Вопрос по карте лояльности', callback_data='loyalty_question')],
+        [InlineKeyboardButton(text='Вопрос по визиту или доставке в Антресоль', callback_data='antresol_question')],
+        [InlineKeyboardButton(text='Вопрос по визиту или доставке в Вольсов', callback_data='volsov_question')],
+        [InlineKeyboardButton(text='Вопрос по визиту или доставке в Gonzo', callback_data='gonzo_question')],
     ])
 
 work_inline_kb = InlineKeyboardMarkup(inline_keyboard=[
